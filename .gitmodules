@@ -1,0 +1,4 @@
+
+[submodule "Practicals/Worksheet2/Task2/Testing"]
+	path = Practicals/Worksheet2/Task2/Testing
+	url = https://github.com/kudaba/simpletest.git
