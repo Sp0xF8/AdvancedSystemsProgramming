@@ -86,26 +86,35 @@ int main() {
     }
 
 
-    //reset and allocate to 1024 chars
+    //reset and allocate to 1023 chars
     allocator.reset();
-    char* h = allocator.allocate<char>(1024, err_num);
+    char* h = allocator.allocate<char>(1023, err_num);
     if (h == nullptr) {
         std::cout << "Allocation failed with error number: " << err_num << std::endl;
     } else {
-        for (int i = 0; i < 1024; i++) {
+        for (int i = 0; i < 1023; i++) {
             h[i] = 'A';
         }
-        h[1024] = '\0';
+        h[1023] = '\0';
         std::cout << "Allocated 1023 chars & 1 null terminator: " << h << std::endl;
     }
 
-    // allocate one more char and show failure
+    // allocate one more char to hit the limit
     char* i = allocator.allocate<char>(1, err_num);
     if (i == nullptr) { 
         std::cout << "Allocation failed with error number: " << err_num << std::endl;
     } else {
         *i = 'B';
-        std::cout << "Allocated 1 char: " << i << " and youre bad at maths cos this didnt fail" << std::endl;
+        std::cout << "Allocated 1 char: " << *i << std::endl;
+    }
+
+    //allocate an integer and show failure
+    int* j = allocator.allocate<int>(1, err_num);
+    if (j == nullptr) {
+        std::cout << "Allocation failed with error number: " << err_num << std::endl;
+    } else {
+        *j = 10;
+        std::cout << "Allocated integer: " << *j << std::endl;
     }
 
 
