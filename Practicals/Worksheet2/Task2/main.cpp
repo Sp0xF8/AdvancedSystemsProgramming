@@ -175,7 +175,7 @@ DEFINE_TEST_G(BumpAllocator_1023CharsResetTest, BumpAllocator){
     }
 
     //reset and allocate to 1024 chars
-    allocator.reset();
+    allocator.deallocate(h);
     char* k = allocator.allocate<char>(1023, err_num);
     TEST_MESSAGE(k != nullptr, "Failed to allocate memory");
 

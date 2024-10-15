@@ -8,10 +8,15 @@ public:
     BumpAllocator(size_t reservation_size);
     ~BumpAllocator();
 
+    //allocate function
     template<typename T>
     T* allocate(size_t number_of_objects = 1, int &err_number = -1);
 
-    void reset();
+    //dealocate func
+    template<typename T>
+    void deallocate(T* ptr);
+
+
 
 private:
     void* reservedChunk;

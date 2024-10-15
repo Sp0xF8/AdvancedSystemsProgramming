@@ -51,7 +51,10 @@ int main() {
     }
 
     //reset the allocator
-    allocator.reset();
+    allocator.deallocate(a);
+    allocator.deallocate(b);
+    allocator.deallocate(c);
+    allocator.deallocate(d);
 
     //allocate a char
     char* e = allocator.allocate<char>(1, err_num);
@@ -85,9 +88,11 @@ int main() {
         std::cout << "Allocated long long: " << *g << std::endl;
     }
 
-
-    //reset and allocate to 1023 chars
-    allocator.reset();
+    allocator.deallocate(e);
+    allocator.deallocate(f);
+    allocator.deallocate(g);
+    
+    //allocate 1023 chars and 1 null terminator to fill the allocator
     char* h = allocator.allocate<char>(1023, err_num);
     if (h == nullptr) {
         std::cout << "Allocation failed with error number: " << err_num << std::endl;
@@ -99,7 +104,7 @@ int main() {
         std::cout << "Allocated 1023 chars & 1 null terminator: " << h << std::endl;
     }
 
-    // allocate one more char to hit the limit
+    //allocate one more char to show that the allocator is full
     char* i = allocator.allocate<char>(1, err_num);
     if (i == nullptr) { 
         std::cout << "Allocation failed with error number: " << err_num << std::endl;
@@ -108,7 +113,12 @@ int main() {
         std::cout << "Allocated 1 char: " << *i << std::endl;
     }
 
-    //allocate an integer and show failure
+
+    allocator.deallocate(h);
+
+    allocator.deallocate(i); //does nothing since the allocator was full when the allocation was attempted
+
+    //retry the previously failed allocation
     int* j = allocator.allocate<int>(1, err_num);
     if (j == nullptr) {
         std::cout << "Allocation failed with error number: " << err_num << std::endl;
@@ -117,9 +127,6 @@ int main() {
         std::cout << "Allocated integer: " << *j << std::endl;
     }
 
-
-
-    system("pause");
     return 0;
 
 }
