@@ -27,7 +27,7 @@ int main() {
     std::cout << "r14: " << c.r14 << std::endl;
     std::cout << "r15: " << c.r15 << std::endl;
 
-    #ifdef _WIN32
+    #ifdef _WIN32 //Windows specific values, not present on linux context
     std::cout << "rdi: " << c.rdi << std::endl;
     std::cout << "rsi: " << c.rsi << std::endl;
     #endif
