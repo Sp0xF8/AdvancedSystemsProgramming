@@ -2,6 +2,8 @@
 
 #include "context.hpp"
 
+
+
 int main() {
 
     #ifdef _WIN32
@@ -24,6 +26,11 @@ int main() {
     std::cout << "r13: " << c.r13 << std::endl;
     std::cout << "r14: " << c.r14 << std::endl;
     std::cout << "r15: " << c.r15 << std::endl;
+
+    #ifdef _WIN32
+    std::cout << "rdi: " << c.rdi << std::endl;
+    std::cout << "rsi: " << c.rsi << std::endl;
+    #endif
 
     std::cout << "a message" << std::endl;
 
