@@ -23,9 +23,11 @@ int main()
     std::cout << "sp with size addition:    " << sp << std::endl;
     std::cout << "foo:                      " << foo << std::endl;
 
-    sp = (void*)((uintptr_t)sp - 128);
+    #ifndef _WIN32
+        sp = (void*)((uintptr_t)sp - 128);
 
-    std::cout << "sp:                       " << sp << std::endl;
+        std::cout << "sp:                       " << sp << std::endl;
+    #endif
     
     sp = (void*)((uintptr_t)sp & -16L);
 
