@@ -1,49 +1,87 @@
 #include <iostream>
 #include "context.hpp"
 
+Context returningContext = {0};
+
 void foo(){
     std::cout << "you called foo" << std::endl;
-    std::exit(0);
+
+    set_context(&returningContext);
 }
+
+void goo(){
+    std::cout << "you called goo" << std::endl;
+    
+    set_context(&returningContext);
+}
+
+
 
 
 int main()
 {
    
-    char data[4096] = {0};
+    char fooStack[4096] = {0};
+    char gooStack[4096] = {0};
 
     //log addres for data
-    std::cout << "data:                     " << &data << std::endl;
+    std::cout << "fooStack:                     " << &fooStack << std::endl;
+    std::cout << "gooStack:                     " << &gooStack << std::endl;
 
-    void* data_ptr = data;
+    void* fooStackPtr = fooStack;
+    void* gooStackPtr = gooStack;
 
-    void* sp = (void*)((uintptr_t)data_ptr + sizeof(data));
+    void* fooSP = (void*)((uintptr_t)fooStackPtr + sizeof(fooStack));
+    void* gooSP = (void*)((uintptr_t)gooStackPtr + sizeof(gooStack));
 
     //log values
-    std::cout << "sp with size addition:    " << sp << std::endl;
+    std::cout << "fooSP with size addition:    " << fooSP << std::endl;
+    std::cout << "gooSP with size addition:    " << gooSP << std::endl;
     std::cout << "foo:                      " << foo << std::endl;
+    std::cout << "goo:                      " << goo << std::endl;
 
     #ifndef _WIN32 //Linux specific code as the red zone doesnt exist within the windows ABI
-        sp = (void*)((uintptr_t)sp - 128);
+        fooSP = (void*)((uintptr_t)fooSP - 128);
+        gooSP = (void*)((uintptr_t)gooSP - 128);
 
-        std::cout << "sp:                       " << sp << std::endl;
+        std::cout << "fooSP:                       " << fooSP << std::endl;
+        std::cout << "gooSP:                       " << gooSP << std::endl;
     #endif
     
-    sp = (void*)((uintptr_t)sp & -16L); //Align the stack to 16 bytes, this is required by both ABI's
+    fooSP = (void*)((uintptr_t)fooSP & -16L); //Align the stack to 16 bytes, this is required by both ABI's
+    gooSP = (void*)((uintptr_t)gooSP & -16L); //Align the stack to 16 bytes, this is required by both ABI's
 
     //log
-    std::cout << "sp: after allignment:     " << sp << std::endl;
+    std::cout << "fooSP: after allignment:     " << fooSP << std::endl;
+    std::cout << "gooSP: after allignment:     " << gooSP << std::endl;
 
 
+    Context fooContext = {0};
+    Context gooContext = {0};
 
-    Context c = {0};
+    fooContext.rsp = fooSP;
+    fooContext.rip = (void*)foo;
 
-    c.rsp = sp;
-    c.rip = (void*)foo;
+    gooContext.rsp = gooSP;
+    gooContext.rip = (void*)goo;
 
-    set_context(&c);
 
-    std::cout << "Direction unchanged" << std::endl;
+    int x = 0;
+
+    get_context(&returningContext);
+
+    if(x == 0){
+        x++;
+        set_context(&fooContext);
+    }
+    
+    if(x == 1){
+        x++;
+        set_context(&gooContext);
+    }
+
+
+    std::cout << "Execution Finished" << std::endl;
 
     return 0;
 }
