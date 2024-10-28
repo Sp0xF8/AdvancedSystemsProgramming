@@ -4,14 +4,14 @@
 
 Scheduler s;
 
-void func1(int* p){
+void func1(){
     std::cout << "fiber 1" << std::endl;
 
     s.fiber_exit();
 }
 
 
-void func2(int* p){
+void func2(){
     std::cout << "fiber 2" << std::endl;
     
     s.fiber_exit();
@@ -27,11 +27,8 @@ int main()
         std::cout << "Linux" << std::endl;
     #endif
 
-    int d = 10;
-    int* p = &d;
-
-    Fiber f2((void*)&func2, (void*)p);
-    Fiber f1((void*)&func1, (void*)p);
+    Fiber f2((void*)&func2);
+    Fiber f1((void*)&func1);
 
     s.spawn(&f1);
     s.spawn(&f2);
