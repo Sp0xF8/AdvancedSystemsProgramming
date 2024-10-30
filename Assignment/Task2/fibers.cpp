@@ -89,8 +89,6 @@ T* Fiber::get_data() {
 
     void* stackPtr = (void*)((uintptr_t)c.rsp + red_zone);
 
-    // std::size_t space_needed = sizeof(void*);
-    // std::size_t allignment = alignof(void*);
 
     #ifndef _WIN32
         stackPtr = (void*)((uintptr_t)stackPtr + 0x90);
@@ -101,17 +99,9 @@ T* Fiber::get_data() {
     void* pArg = *(void**)stackPtr;
 
 
-
-
-
-
     if (pArg != nullptr) {
         return (T*)pArg;
     }
-
-
-
-
 
     return nullptr;
 }
