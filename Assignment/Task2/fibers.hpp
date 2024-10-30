@@ -5,20 +5,19 @@ class Fiber {
     public:
         Fiber(void* func);
 
-
-        Fiber(void* func, void* _pArg);
+        template <typename T>
+        Fiber(void* func, T* _pArg);
 
 
         ~Fiber();
         Context ret_context();
+        template <typename T = void*>
+        static T* get_data(); //better name might be get_arg
 
     private:
         Context context_;
         char* stack_bottom;
         char* stack_top;
-
-        
  
-        void* pArg;
 
 };
