@@ -19,22 +19,22 @@ struct Board {
 };
 
 class TickTacToe {
-public:
+    public:
 
-    TickTacToe();
+        TickTacToe();
 
-    void ResetGame();
+        void ResetGame();
 
-    Move WinCondition();
+        Move WinCondition();
 
-    bool MakeChoice();
+        bool MakeChoice();
 
-    void PrintBoard();
+        void PrintBoard();
 
-private:
-    Move Turn;
+    private:
+        Move Turn;
 
-    Board* board;
+        Board* board;
 
 
 };

@@ -12,4 +12,3 @@ project(ASP)
 set(CMAKE_CXX_STANDARD 20)
 
 add_subdirectory(Practicals)
-add_subdirectory(Assignment)

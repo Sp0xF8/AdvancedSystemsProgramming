@@ -4,10 +4,12 @@
 
 int main(){
 
-    TickTacToe* runningGame = new TickTacToe();
+    TickTacToe* runningGame;
 
 
     while(true) {
+
+        runningGame = new TickTacToe();
 
         std::cout << "Welcome to the TickTacToe Game!" << std::endl;
 
@@ -26,13 +28,13 @@ int main(){
             }
         }
 
-        std::cout << "Thanks for playing! Another round? (y/n)" << std::endl;
+        std::cout << "Thanks for playing! Another round? (y/n) ";
 
         char input;
 
         std::cin >> input;
 
-        if (input != 'y' || input != 'Y') {
+        if (input != 'y' && input != 'Y') {
             break;
         }
 
@@ -42,5 +44,5 @@ int main(){
 
 
 
-    return 1;
+    return 0;
 }
