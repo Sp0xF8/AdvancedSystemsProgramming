@@ -1,4 +1,4 @@
-#include "../Task3/my_string.hpp"
+#include "my_string.hpp"
 #include "RefCounter.hpp"
 
 int main() {
@@ -24,4 +24,5 @@ int main() {
         s.printRefs();
     }
 
+    std::cout << "Objects should be removed" << std::endl;
 }

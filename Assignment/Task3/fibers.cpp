@@ -100,7 +100,7 @@ T* Fiber::get_data() {
         stackPtr = (void*)((uintptr_t)stackPtr + 0x170);
     #endif
 
-    void* pArg = *(void**)stackPtr;
+    void* pArg = *(void**)stackPtr; //Dereference the pointer to get the value, not the address
 
 
     if (pArg != nullptr) {

@@ -2,6 +2,18 @@
 #include "scheduler.hpp"
 
 
+/*
+
+    plan of devlopment:
+
+    1. add the tic tac toe game
+    2. add the bump down allocator 
+    3. pass bump allocator to the funcs
+    4. make moves and yeild to simulate a fake game between two players
+
+
+*/
+
 Scheduler s;
 
 void func1(){

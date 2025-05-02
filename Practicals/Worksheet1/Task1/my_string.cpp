@@ -35,6 +35,7 @@ my_string::my_string(my_string const& s){
 }
 
 my_string& my_string::operator= (my_string const& s) {
+    
     if (this->string != nullptr) {
         delete this->string;
     }
@@ -60,7 +61,7 @@ char my_string::getChar(const int& i) const {
 void my_string::setChar(const int& i, const char& c) {
     if (i > strlen(this->string) && i >= 0 && this->string != nullptr) { return; }
 
-   this->string[i] = c;
+    this->string[i] = c;
 }
 
 void my_string::print() const {

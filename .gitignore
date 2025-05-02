@@ -4,6 +4,8 @@ build
 practicals/build
 practicals/Workshop2/Task2/Testing/
 
+submissionfolder/
+
 
 # Ignore build files for Assignment (uses clang instead of cmake for building)
 *.exe

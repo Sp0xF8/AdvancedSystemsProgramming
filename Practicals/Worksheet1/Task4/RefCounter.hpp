@@ -2,26 +2,24 @@
 
 #include <cstdint>
 
-template <class T>
+template <typename T>
 class RefCounter
 {
-public:
+    public:
 
-    RefCounter(T* object);
+        RefCounter(T* object);
+        RefCounter(const RefCounter& other);
 
-    RefCounter(const RefCounter& other);
-    RefCounter& operator=(const RefCounter& other);
+        RefCounter& operator=(const RefCounter& other);
 
-    ~RefCounter();
+        ~RefCounter();
 
-    T* getObject();
+        T* getObject();
+        uint64_t getReferences() const;
 
-    uint64_t getReferences();
+        void printRefs() const;
 
-    void printRefs();
-
-
-private:
-    T* object;
-    uint64_t* references;
+    private:
+        T* object;
+        uint64_t* references;
 };

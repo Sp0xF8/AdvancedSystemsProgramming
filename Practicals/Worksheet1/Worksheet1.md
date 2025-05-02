@@ -457,4 +457,779 @@ Using the same execution command, `./a.out`, should show the following output:
 
 
 ## Task2
+Reference counting is a common way of managing memory in C++. It helps to keep track of how many instances there are of a class. This count can then be used to delete the object, once it is no longer needed. This is a simplistic form of **Garbage Collection**.
+
+> Garbage Collection: The process of deleting objects in order to free up memory for the program. In languages like Rust, this is done automatically. However, in C++, this it must be done manually.
+
+This task is to adapt the my_string class to include reference counting. This does not require much additional code, but a few changes to the class definition and the methods are required. 
+
+### Class Definition & Method Declaration
+The class definition will remain the same, only a new variable must be added. This is what will store the number of refernces to the class instance. 
+
+```cpp
+class my_string {
+    public:
+        my_string(); // Change required
+        my_string(const char*); // Change required
+        my_string(my_string const& s); // Change required
+        my_string& operator= (my_string const& s); // Change required
+        ~my_string(); // Change required
+        char getChar(const int& i) const;
+        void setChar(const int& i, const char& c);
+        void print() const;
+
+    private:
+        char* string;
+        uint64_t* references; // new variable to store the number of references
+};
+```
+
+This is a new data type, which has previously not been covered. Similar to how an `int` is used to display whole numbers, a `uint64_t` is also used to display whole numbers. The difference here is that it may only hold rational numbers, meaning that it can not hold negative numbers. 
+
+This is useful for storing the number of references, as it is not possible to have a negative number of references. A smaller data type could be used here, for example a `uint32_t`, but this would limit the number of possible references. It is still a very large amount that can be tracked, but given the theoretical amount of references that could be created, it is better to use a larger data type. 
+
+The most known fear of this occurance was the turn of the millenium. Many people all over the world prepared for a disaster, assuming that planes and satallites would fall from the sky. The belief was that storing dates as two numbers (1999 becomes 99) would cause systems to crash, as they would not be able to handle the date change from 99 -> 00. This is what is known as an integer overflow. It is also refered to as an integer wrap around, as the number will jump from the maximum value to the minimum value. 
+
+A simple fix for this issue was increasing the size of the data type to allow for 4 digits. However, not all systems could handle the memory requirements. For such systems, a "Windowing" technique was used. This meant the century could be inferred from the most likely date. For example, if the date was 01/01/01, it would be assumed to be 01/01/2001, instead of 01/01/1900. Conversley, if the date were 01/01/99, it would be assumed to be 01/01/1999, instead of 01/01/2099. The aim of this was to split the centries into two halves, with the pivot point being the current year at the time (2000).
+
+This problem outlines why it is important to consider the type of data you are storing, and how it can be used in the future. According to the National Museum of American History, the estimated cost of the Y2K bug was between [300 and 600 billion dollars](https://americanhistory.si.edu/collections/object-groups/y2k#:~:text=Research%20firm%20Gartner%20estimated%20the,before%20midnight%20December%2031%2C%201999.). Thats a lot of money for 2 extra digits. 
+
+
+A Similar issue is expected to arise with the year 2038. Currently, the way most modern computers track time, is with the Unix Timestamp. This is a 32bit integer, which counts the number of seconds since 1970. Given this value is 32bit, the maximum value that can be stored is **2,147,483,647**. As writing this, the current Timestamp is **1,730,913,877**: leaving only **416,569,770** seconds left before the wrap around. The expected date for this is **19th January, 2038**. Before this date, the world would once again switch to a 64bit timestamp, or a more robust solution must be found. 
+
+
+### Method Changes
+
+The changes to these methods are minimal and focus on the addition of the `references` pointer. 
+
+#### Empty Constructor
+```cpp
+my_string::my_string(){
+    this->string = nullptr;
+    this->references = new uint64_t(1); // initalise the references to new uint64_t with the value of 1
+}
+```
+
+The only change that was required here was for the initilsation of the references pointer. This is set to 1, as the creation of the class marks the first reference. 
+
+#### C-Style Constructor
+```cpp
+my_string::my_string(const char* cStr) {
+
+    size_t len = strlen(cStr);
+    len += 1; // null terminal
+
+    this->string = new char[len];
+    strncpy_s(this->string, len, cStr, len);
+    
+    this->references = new uint64_t(1); // create a new uint64_t with the value of 1
+}
+```
+
+The same change is made here, the addition of the references pointer.
+
+#### Constructing with an existing instance
+```cpp
+my_string::my_string(my_string const& s){
+
+    size_t len = strlen(s.string);
+    len += 1; // null terminal
+
+    this->string = new char[len];
+
+    strncpy_s(this->string, len, s.string, len);
+
+    this->references = s.references; // point this references to the same variable that s points to (created in the constructor)
+    *this->references += 1; // dereference the references pointer and increment the value
+}
+```
+
+> Dereferencing allows the developer to access the variable that a pointer is storing. This is done by using the `*` symbol before the pointer name.
+
+> Why cant i use the **var++** syntax to incriment the references? The `++` operator is used to incriment a value by 1, however, when used in this context, it would incriment the memory address stored by the pointer, not the value stored in the address. This might cause the program to crash, as you would be trying to dereference a memory location that is offset by 1 byte from where it should be.
+
+#### Assignment Overload Operator
+```cpp
+my_string& my_string::operator= (my_string const& s) {
+    if (this->string != nullptr) {
+        delete this->string;
+    }
+    
+    size_t len = strlen(s.string);
+    len += 1; // null terminal
+
+    this->string = new char[len];
+
+    strncpy_s(this->string, len, s.string, len);
+
+    this->references = s.references; // point this references to the same variable that s points to
+    *this->references += 1; // dereference the references pointer and increment the value
+
+    return *this;
+}
+```
+
+The same changes are made to the assignment operator as the previous constructor. This is because they both have the same purpose, with a different method of initialisation.
+
+#### Destructor
+
+As discussed, the desctructor should now be capable of clearing up memory when there are no more references to the class. This is done by decrimenting the references pointer every time the destructor is called. If the references pointer reaches 0, the memory can be freed as the class is no longer in scope. 
+
+
+The destructor might look like this:
+```cpp
+my_string::~my_string(){
+    *this->references -= 1; // decrement the references pointer
+    if(*this->references == 0) { // check if references are now 0
+
+        if(this->string != nullptr) { // check if the string is initalised
+            delete this->string; // if it is, delete the string
+        }
+        delete this->references; // delete the references
+    }
+}
+```
+
+Thats it! All of the method that require change have now been modified, allowing the application to automatically track the number of references exist to the `my_string` class. This is the essence of low-level programming, and one of the largest reasons for the creation of Rust: currently one of the most memory-safe languages. Programming in Rust forces checks at compile time to ensure that the program will not create a memory leak. Other systems in this language assist in memory management, like the Ownership system, aswel as Borrowing. 
+
+The ownership system serves garbage collection methods by allocating space with an ownership. This ownership is assigned to data, meaning when it goes out of scope, the allocated space is automatically removed using the relationship between owner and owned. 
+
+#### Printing the references
+While not necessasary, it would be good for visualisation to display the number of references that currently exist. We can do this within the print statement by simply adding the value pointed to by the references pointer. 
+
+```cpp
+void my_string::print() const {
+    if(this->string == nullptr) { return; }
+    std::cout << this->string << "[" << *this->references << "]" << std::endl; // dereference the pointer and print its value
+}
+```
+
+<details>
+    <summary> Example my_string.cpp file (click me) </summary>
+
+        #include "my_string.hpp"
+        #ifndef _WIN32
+
+            #include <cstring>
+            #define strncpy_s(s1, l1, s2, l2) strncpy(s1, s2, l1)
+        #endif
+
+
+
+        my_string::my_string(){
+            this->string = nullptr;
+            this->references = new uint64_t(1);
+        }
+
+
+
+        my_string::my_string(const char* cStr) {
+
+            size_t len = strlen(cStr);
+            len += 1; // null terminal
+
+            this->string = new char[len];
+
+            strncpy_s(this->string, len, cStr, len);
+            this->references = new uint64_t(1);
+        }
+
+        my_string::my_string(my_string const& s){
+
+            size_t len = strlen(s.string);
+            len += 1; // null terminal
+
+            this->string = new char[len];
+
+            strncpy_s(this->string, len, s.string, len);
+
+            this->references = s.references;
+            *this->references += 1;
+        }
+
+        my_string& my_string::operator= (my_string const& s) {
+
+            if (this->string != nullptr) {
+                delete this->string;
+            }
+
+            size_t len = strlen(s.string);
+            len += 1; // null terminal
+
+            this->string = new char[len];
+
+            strncpy_s(this->string, len, s.string, len);
+
+            this->references = s.references;
+            *this->references += 1;
+
+            return *this;
+        }
+
+        my_string::~my_string(){
+            *this->references -= 1;
+
+            if (*this->references == 0) {
+                std::cout << "Deleting object, out of scope" << std::endl;
+
+                if(this->string != nullptr) {
+
+                    delete this->string;
+                }
+                
+                delete this->references;
+            }
+        }
+
+        char my_string::getChar(const int& i) const {
+            if (i > strlen(this->string) && i >= 0 && this->string != nullptr) { return '\0'; }
+
+            return this->string[i];
+        }
+
+        void my_string::setChar(const int& i, const char& c) {
+            if (i > strlen(this->string) && i >= 0 && this->string != nullptr) { return; }
+
+            this->string[i] = c;
+        }
+
+        void my_string::print() const {
+            if(this->string == nullptr) { return; }
+            std::cout << this->string << "[" << *this->references << "]" << std::endl;
+        }
+
+</details>
+
+<details>
+    <summary> Example my_string.hpp file (click me) </summary>
+
+        #pragma once
+        #include <iostream>
+
+        class my_string {
+            public:
+                my_string();
+                my_string(const char*);
+                my_string(my_string const& s);
+                my_string& operator= (my_string const& s);
+                ~my_string();
+                char getChar(const int& i) const;
+                void setChar(const int& i, const char& c);
+                void print() const;
+
+            private:
+                char* string;
+                uint64_t* references;
+        };
+</details>
+
+### Testing the changes
+
+Using the same test application, lets compile the new version of our `my_string` class.
+
+On Linux:
+```bash
+clang main.cpp my_string.cpp my_string.hpp -lstdc++
+```
+On Windows:
+```bash
+clang main.cpp my_string.cpp my_string.hpp
+```
+
+
+Running these programs should now result in the following outputs:
+
+##### Linux:
+
+![Task2 running example, Linux](md_imgs/linTask2Run.png)
+
+##### Windows:
+
+![Task2 running example, Windows](md_imgs/winTask2Run.png)
+
+
+## Task3
+
+This task is to modify the Test program and demonstrate when the references for an object reach 0. If we look closer at the previous outputs, we can observe this is actually already happening. The initial test program provided....
+
+```cpp
+#include "my_string.hpp"
+int main() { //main function scope
+    my_string s("Hello world"); // references = 1
+    s.print();
+    { // new scope
+        my_string t = s; // references = 2
+        s.print();
+        t.print();
+        std::cout << s.getChar(1) << std::endl;
+        s.print();
+        t.print();
+    } // call destructor for t, references = 1
+    s.setChar(1,'E');
+    s.print();
+} // call destructor for s, references = 0
+```
+
+.... has a total of two scopes, denoted by the content of the curly brackets `{}`. 
+
+The first scope is the main function, the second is the scope created by the curly brackets. Looking at the output of this program, we can see that the object is freed from the memory when the main function scope is exited. This is because the descructor is called automatically when the object is no longer in scope. So, when the main function is exited: the destructor will have been called for the `s` object, moving the references to 0 and freeing the memory.
+
+## Task4
+
+From the previous tasks, the value of reference counting should be clear. It is a simple and easy to undestand way of managing memory in C++. However, setting it up is time consuming and can result in acciedntly creating memory leaks if not done correctly, or if forgotten about entirely. It would be much more useful if we could apply a functionality to every class, without having to write the same code over and over again.
+
+This is where Class Templates come in. As the name might suggest, their structure is very similar to that of a class. They have constructors, destructors, and methods. However, they are not classes themselves. Instead, they are used to create classes. This is highly useful when you do not know exactly what type parts of your class will be. 
+
+For example, if you were storing an integer inside of a class, you would most likely declare it as an `int`. However, if you wanted to store a `float` instead, you would need to create an entirely new class. With templates, you can use a placeholder type, which will be replaced by the specific type when the instance is created.
+
+### Defining a Class Template
+
+Defining a template is simple. You must use the keyword `template`, followed by the template parameters. These will vary depending on the number of different types you want to use. For our case, we only need one. 
+
+```cpp
+template <typename T>
+```
+
+Here, `T` is the placeholder type. When the class is initated, it will be replaced by the type that is passed. Additionally, for the type to be used within the class, it must be defined just before the class definition. 
+
+For example:
+```cpp
+template <typename T> // define the template
+class my_class { // define the class
+    public:
+        my_class(T); // using the template type in the constructor to set "value"
+
+    private:
+        T value; // using the template type to define a variable
+};
+```
+
+This will create a `my_class` template, which can be used to create classes with members of any type.
+
+> Reminder: Members are the variables and methods which belong to the class.
+
+Initalising a class with a template such as this would look slightly different to a regular class. Here, the type of the class must be defined when the class is created.
+```cpp
+my_class<int> a(5); // create a new instance of my_class with the type int, and set the value to 5
+my_class<float> b(5.5); // create a new instance of my_class with the type float, and set the value to 5.5
+```
+
+It is worth nothing that these functions will not work if the type template is not explicitly defined. This is because compiler needs to know what type the class is, before it is created. It also helps to ensure that no wrong types are passed to the class which the class cannot handle. We, as the developer, must define the types that can be used to create the class.
+
+```cpp
+template class my_class<int>; // define the class with the type int
+template class my_class<float>; // define the class with the type float
+```
+
+After implementing these changes, the class can now be used with the specified types.
+
+### Defining a Reference Counting Class Template
+
+Using all of the information from this worksheet, it should now be possible to build a template class which will automatically track the number of references. This could be the foundational block for a memory management library in C++.
+
+With our knowledge about public and private members, we know that we should keep our variable inside the private section: as to avoid accidental modification. There is also the undestanding that there should be public methods to access the private variables, our Getter method. 
+
+Given we are aiming to reference count *something*, the object to be counted should be a templated type. From our previous tasks, we also know that in order to count references, there must also be a `uint64_t` pointer. It would also be useful to know the number of references that exist to the templated type, so a method to return this value would be useful.
+
+If we are to create a class template that can successfully emulate the `my_string` Test program, there must also be an assignment operator overload.
+
+The fincal class definition might look something like this:
+```cpp
+template <typename T>
+class RefCounter
+{
+    public:
+
+        RefCounter(T* object); // constructor to initalise the object and the references
+        RefCounter(const RefCounter& other); // copy constructor
+
+        RefCounter& operator=(const RefCounter& other); // assignment operator overload
+
+        ~RefCounter(); // destructor
+
+        T* getObject(); // getter for the object
+        uint64_t getReferences(); // getter for the references
+
+        void printRefs(); // print the number of references
+
+    private:
+        T* object; // the object to be reference counted
+        uint64_t* references; // the number of references to the object
+};
+```
+
+This will likely give an error when compiled, not only because the methods are not defined, or because the template is not defined, but because the `uint64_t` type is not defined. This type is not native to the C++ language, and must be imported with the `cstdint` library. 
+
+```cpp
+#include <cstdint>
+```
+> Reminder: The `#include` directive is used to include libraries in C++. Depending on the needs of the program, this can be located in different positions within the file; but it is typically at the top of the page, directly after the `#pragma once` directive. If this is loaded before the `prama` directive, there is a chance that the library will be included multiple times, which can cause issues with the program as previously mentioned. 
+
+### Method Definitions
+A large majority of the methods within this class are the same as the `my_string` class. However, there are no longer any `char` arrays to copy, so the methods will be much simpler.
+
+#### Constructor
+
+Similar to how a class must be defined just after the template, so to must the methods. Lets start with the constructor. This will be used to initalise the object and the references. Unlike our `my_string` class, there is no option to create an object without a reference. This is because the object must be initalised with a value, as the reference is what is being counted. 
+
+```cpp
+template <typename T>
+RefCounter<T>::RefCounter(T* object) {};
+```
+
+Similar to the `my_string` class, the constructor must initalise the object and the references. This is done by creating a new `uint64_t` pointer and setting it to 1. 
+
+```cpp
+template <typename T>
+RefCounter<T>::RefCounter(T* object) {
+    this->object = object; // point the object to the object passed
+    this->references = new uint64_t(1); // initalise the references to 1, same as "my_string"
+}
+```
+
+#### Copy Constructor
+This function is almost identical to the `my_string` class, without the need to focus on string copying. Instead, just pointes are copied.
+```cpp
+template <typename T>
+RefCounter<T>::RefCounter(const RefCounter& other) {
+    this->object = other.object; // point this object to the object in other
+    this->references = other.references; // point this references to the references in other
+    *this->references += 1; // increment the references
+}
+```
+
+
+
+#### Assignment Operator Overload
+Once again, there are no real changes to this function's purpose. Instead of copying a string, a pointer is copied.
+
+```cpp
+template <typename T>
+RefCounter<T>& RefCounter<T>::operator=(const RefCounter& other) {
+
+    //doesnt need to check if the object is nullptr because the class is not initalised without an object
+    this->object = other.object; // point this object to the object in other
+    this->references = other.references; // point this references to the references in other
+    *this->references += 1; // increment the references
+
+    return *this; // return the current instance
+}
+```
+
+#### Destructor
+The destructor is also very similar to the `my_string` class. Here, instead of deleting a string, the object is deleted. Because the object could be anything, the class has no way of knowing how to delete it. This is why it is important that the object must handle its own memory management. 
+
+```cpp
+template <typename T>
+RefCounter<T>::~RefCounter() {
+    *this->references -= 1; // decrement the references
+
+    if (*this->references == 0) { // check if the references are now 0
+        std::cout << "Deleting object, out of scope" << std::endl;
+        delete this->object; // delete the object
+        delete this->references; // delete the references
+    }
+}
+```
+
+#### Getter Methods
+
+These getters are simple, one is const and the other is not. Getting the object is a simple return statement, and cannot be constant as the object might need to be modified. The references, however, can be constant, as it is only being read. 
+
+```cpp
+template <typename T>
+T* RefCounter<T>::getObject() { // read and write function
+    return this->object; // return the object pointer
+}
+
+template <typename T>
+uint64_t RefCounter<T>::getReferences() const { // read only function
+    return *this->references; // return the value pointed to by the references pointer
+}
+```
+
+#### Print Method
+The print method is also very simple, and is used to display the number of references that exist to the object. 
+
+```cpp
+template <typename T>
+void RefCounter<T>::printRefs() const {
+    std::cout << "XRefs [" << *this->references << "]" << std::endl; // print the number of references
+}
+```
+
+#### Explicit Template Instantiation
+As we plan to use our `my_string` class with the `RefCounter` class, we must tell the compiler that this is possible. As previously shown, this can be acheived like so:
+```cpp
+template class RefCounter<my_string>;
+```
+> In order to use this class, the *my_string.hpp* file must be included. This is because the compiler needs to know what the `my_string` class is, before it can be used.
+
+### Modifying the `my_string.cpp` from Task1
+
+Given that memory management is automated by the `RefCounter` class, the `my_string` class must how be modified to reflect this. The only change needed is to add a destructor to the class. As mentioned, this is because the responsiblity of memory management is now handled by the `RefCounter` class. It simply invokes the destructor of the my_string class when the Reference count reaches 0.
+
+```cpp
+my_string::~my_string(){
+    if (this->string != nullptr){ // if the string is initialised
+        delete this->string; // delete the string
+    }
+}
+```
+
+### Testing the Class Template
+
+The final step is to test the class template. Lets try to emulate the same Test program as before, but instead using the `RefCounter` class. Given the counting is no longer done by the `my_string` class, we must be slightly leaniant with the similarities. This is because the `my_string` print function no longer has access to the number of references, or even knows that it is being reference counted. Because of this, we must use the `RefCounter` print function to display the number of references after each print from the string. 
+
+```cpp
+#include "my_string.hpp"
+#include "RefCounter.hpp"
+
+int main() { // main function scope
+    std::cout << "Running Task4" << std::endl;
+    { // scope 2
+        RefCounter<my_string> s(new my_string("Hello world")); // create a new instance of RefCounter with the type my_string, and initalise it with "Hello world"
+        s.getObject()->print(); // get the object pointer and call the print function
+        s.printRefs(); // print the number of refs
+        { // scope 3
+            RefCounter<my_string> t = s; // create an instance of RefCounter with the type my_string, and initalise it with s
+
+            s.getObject()->print();
+            s.printRefs();
+            t.getObject()->print();
+            t.printRefs();
+            std::cout << s.getObject()->getChar(1) << std::endl;
+            s.getObject()->print();
+            s.printRefs();
+            t.getObject()->print();
+            t.printRefs();
+        } // call destructor for t, references = 1
+        s.getObject()->setChar(1, 'E');
+        s.getObject()->print();
+        s.printRefs();
+    } // call destructor for s, references = 0
+
+    std::cout << "Objects should be removed" << std::endl;
+} // no destructors to call, no more objects
+```
+
+> ***Reminder*** : The `new` keyword is used to allocate memory for the object on the heap. It then returns a pointer to the object.
+
+<details>
+    <summary> Example my_string.hpp file (click me) </summary>
+
+        #pragma once
+        #include <iostream>
+
+        class my_string {
+            public:
+                my_string();
+                my_string(const char*);
+                my_string(my_string const& s);
+                my_string& operator= (my_string const& s);
+                ~my_string();
+                char getChar(const int& i) const;
+                void setChar(const int& i, const char& c);
+                void print() const;
+
+            private:
+                char* string;
+        };
+</details>
+
+<details>
+    <summary> Example my_string.cpp file (click me) </summary>
+
+        #include "my_string.hpp"
+        #ifndef _WIN32
+
+            #include <cstring>
+            #define strncpy_s(s1, l1, s2, l2) strncpy(s1, s2, l1)
+        #endif
+
+        my_string::my_string(){
+            this->string = nullptr;
+        }
+
+        my_string::my_string(const char* cStr) {
+
+            size_t len = strlen(cStr);
+            len += 1; // null terminal
+
+            this->string = new char[len];
+
+            strncpy_s(this->string, len, cStr, len);
+        }
+
+        my_string::my_string(my_string const& s){
+
+            size_t len = strlen(s.string);
+            len += 1; // null terminal
+
+            this->string = new char[len];
+
+            strncpy_s(this->string, len, s.string, len);
+        }
+
+        my_string& my_string::operator= (my_string const& s) {
+            
+            if (this->string != nullptr) {
+                delete this->string;
+            }
+            
+            size_t len = strlen(s.string);
+            len += 1; // null terminal
+
+            this->string = new char[len];
+
+            strncpy_s(this->string, len, s.string, len);
+
+            return *this;
+        }
+
+        my_string::~my_string(){
+            if (this->string != nullptr){
+                delete this->string;
+            }
+        }
+
+        char my_string::getChar(const int& i) const {
+            if (i > strlen(this->string) && i >= 0 && this->string != nullptr) { return '\0'; }
+
+            return this->string[i];
+        }
+
+        void my_string::setChar(const int& i, const char& c) {
+            if (i > strlen(this->string) && i >= 0 && this->string != nullptr) { return; }
+
+            this->string[i] = c;
+        }
+
+        void my_string::print() const {
+            if(this->string == nullptr) { return; }
+            std::cout << this->string << std::endl;
+        }
+</details>
+
+<details>
+    <summary> Example RefCounter.hpp file (click me) </summary>
+
+        #pragma once
+
+        #include <cstdint>
+
+        template <typename T>
+        class RefCounter
+        {
+            public:
+
+                RefCounter(T* object);
+                RefCounter(const RefCounter& other);
+
+                RefCounter& operator=(const RefCounter& other);
+
+                ~RefCounter();
+
+                T* getObject();
+                uint64_t getReferences() const;
+
+                void printRefs() const;
+
+            private:
+                T* object;
+                uint64_t* references;
+        };
+</details>
+
+<details>
+    <summary> Example RefCounter.cpp file (click me) </summary>
+
+        #include "RefCounter.hpp"
+        #include "my_string.hpp"
+        #include <iostream>
+
+        template <typename T>
+        RefCounter<T>::RefCounter(T* object) {
+            this->object = object;
+            this->references = new uint64_t(1);
+        }
+
+        template <typename T>
+        RefCounter<T>::RefCounter(const RefCounter& other) {
+            this->object = other.object;
+            this->references = other.references;
+            *this->references += 1;
+        }
+
+        template <typename T>
+        RefCounter<T>& RefCounter<T>::operator=(const RefCounter& other) {
+            if (this->object != nullptr) {
+                delete this->object;
+            }
+
+            this->object = other.object;
+            this->references = other.references;
+            *this->references += 1;
+
+            return *this;
+        }
+
+        template <typename T>
+        RefCounter<T>::~RefCounter() {
+            *this->references -= 1;
+
+            if (*this->references == 0) {
+                std::cout << "Deleting object, out of scope" << std::endl;
+                delete this->object;
+                delete this->references;
+            }
+        }
+
+        template <typename T>
+        T* RefCounter<T>::getObject() {
+            return this->object;
+        }
+
+
+        template <typename T>
+        uint64_t RefCounter<T>::getReferences() const {
+            return *this->references;
+        }
+
+        template <typename T>
+        void RefCounter<T>::printRefs() const {
+            std::cout << "XRefs [" << *this->references << "]" << std::endl;
+        }
+
+
+        template class RefCounter<my_string>;
+</details>
+
+### Compiling and Running
+
+By now, the compilation process should be familiar. The same commands can be used to compile the program.
+
+On Linux:
+```bash
+clang main.cpp my_string.cpp RefCounter.cpp my_string.hpp RefCounter.hpp -lstdc++
+```
+On Windows:
+```bash
+clang main.cpp my_string.cpp RefCounter.cpp my_string.hpp RefCounter.hpp
+```
+
+Running the program should result in the following output:
+
+##### Linux:
+
+![Task4 running example, Linux](md_imgs/linTask4Run.png)
+
+##### Windows:
+
+![Task4 running example, Windows](md_imgs/winTask4Run.png)
+
+
+## Conclusion
+
+This worksheet focused a lot on memory management and access within C++. It focused heavily on pointers and automation, emphasising the use of Object Orientated Programming. One of the most important topics covered was the use of templates. These empower developers to write more dynamic code, allowing for much easier management of large code bases. 
 

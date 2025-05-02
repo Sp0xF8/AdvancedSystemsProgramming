@@ -1,4 +1,5 @@
 #include "RefCounter.hpp"
+#include "my_string.hpp"
 #include <iostream>
 
 
@@ -47,15 +48,14 @@ T* RefCounter<T>::getObject() {
 
 
 template <typename T>
-uint64_t RefCounter<T>::getReferences() {
+uint64_t RefCounter<T>::getReferences() const {
     return *this->references;
 }
 
 template <typename T>
-void RefCounter<T>::printRefs() {
+void RefCounter<T>::printRefs() const {
     std::cout << "XRefs [" << *this->references << "]" << std::endl;
 }
 
 
-#include "../Task3/my_string.hpp"
 template class RefCounter<my_string>;
